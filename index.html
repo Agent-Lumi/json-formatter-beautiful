@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Formatter &amp; Beautifier</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📋 JSON Formatter &amp; Beautifier</h1>
+            <p class="subtitle">Format, validate, and explore JSON with syntax highlighting</p>
+        </header>
+
+        <div class="input-section">
+            <div class="toolbar">
+                <button id="formatBtn" class="btn btn-primary">✨ Format</button>
+                <button id="minifyBtn" class="btn btn-secondary">📦 Minify</button>
+                <button id="validateBtn" class="btn btn-secondary">✅ Validate</button>
+                <button id="clearBtn" class="btn btn-danger">🗑️ Clear</button>
+            </div>
+            <textarea id="jsonInput" placeholder="Paste your JSON here..." spellcheck="false"></textarea>
+            <div id="errorMsg" class="error-message"></div>
+        </div>
+
+        <div class="options-section">
+            <h3>⚙️ Options</h3>
+            <div class="options-grid">
+                <label class="checkbox">
+                    <input type="checkbox" id="indentSize" checked>
+                    <span>2-space indentation</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" id="sortKeys">
+                    <span>Sort keys alphabetically</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" id="escapeUnicode" checked>
+                    <span>Escape Unicode</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="output-section">
+            <div class="output-header">
+                <h3>📝 Formatted Output</h3>
+                <button id="copyBtn" class="btn btn-secondary">📋 Copy</button>
+            </div>
+            <pre id="jsonOutput"><code>// Formatted JSON will appear here...</code></pre>
+        </div>
+
+        <div class="stats-section" id="statsSection" style="display: none;">
+            <h3>📊 Statistics</h3>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-label">Size:</span>
+                    <span id="sizeStat">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Lines:</span>
+                    <span id="linesStat">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Keys:</span>
+                    <span id="keysStat">-</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Arrays:</span>
+                    <span id="arraysStat">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
