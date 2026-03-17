@@ -77,9 +77,18 @@ h1 {
     border: 1px solid rgba(255,71,87,0.3);
 }
 
+.btn-small {
+    padding: 8px 14px;
+    font-size: 0.85rem;
+}
+
 .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn:active {
+    transform: translateY(0);
 }
 
 textarea {
@@ -158,10 +167,18 @@ textarea:focus {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .output-header h3 {
     color: #fff;
+}
+
+.output-controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 pre {
@@ -213,6 +230,58 @@ code {
 
 .json-comma {
     color: #fff;
+}
+
+/* Collapsible Nodes */
+.json-toggle {
+    cursor: pointer;
+    user-select: none;
+}
+
+.json-toggle-btn {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    font-size: 10px;
+    color: #888;
+    margin-right: 4px;
+    border-radius: 3px;
+    transition: all 0.2s ease;
+}
+
+.json-toggle-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+.json-toggle-btn.collapsed {
+    color: #667eea;
+}
+
+.json-toggle-content {
+    display: inline;
+}
+
+.json-toggle-content.collapsed {
+    display: none;
+}
+
+.json-collapsed-count {
+    color: #888;
+    font-style: italic;
+    font-size: 0.8rem;
+}
+
+/* Indentation for nested content */
+.json-toggle-content {
+    display: block;
+    padding-left: 0;
+}
+
+.json-toggle-content > * {
+    display: block;
 }
 
 .stats-section {
@@ -290,5 +359,10 @@ code {
         flex-direction: column;
         gap: 10px;
         align-items: flex-start;
+    }
+    
+    .output-controls {
+        width: 100%;
+        justify-content: flex-start;
     }
 }
