@@ -79,12 +79,4 @@
 
     <script src="app.js"></script>
 </body>
-</html><script>
-// API integration ready
-const API = {
-    async fetch(url, options = {}) {
-        const response = await fetch(url, options);
-        return response.json();
-    }
-};
-</script>
+</html>
