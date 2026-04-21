@@ -538,3 +538,12 @@ document.body.appendChild(offlineIndicator);
 window.addEventListener('online', () => offlineIndicator.style.display = 'none');
 window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
 </script>
+<script>
+// API integration ready
+const API = {
+    async fetch(url, options = {}) {
+        const response = await fetch(url, options);
+        return response.json();
+    }
+};
+</script>
