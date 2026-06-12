@@ -16,10 +16,10 @@
 
         <div class="input-section">
             <div class="toolbar">
-                <button id="formatBtn" class="btn btn-primary">✨ Format</button>
-                <button id="minifyBtn" class="btn btn-secondary">📦 Minify</button>
-                <button id="validateBtn" class="btn btn-secondary">✅ Validate</button>
-                <button id="clearBtn" class="btn btn-danger">🗑️ Clear</button>
+                <button id="formatBtn" class="btn btn-primary" title="Ctrl+Enter">✨ Format</button>
+                <button id="minifyBtn" class="btn btn-secondary" title="Ctrl+Shift+M">📦 Minify</button>
+                <button id="validateBtn" class="btn btn-secondary" title="Ctrl+Shift+V">✅ Validate</button>
+                <button id="clearBtn" class="btn btn-danger" title="Ctrl+Shift+C">🗑️ Clear</button>
                 <button id="importBtn" class="btn btn-secondary">📁 Import</button>
             </div>
             <textarea id="jsonInput" placeholder="Paste your JSON here..." spellcheck="false"></textarea>
@@ -48,8 +48,8 @@
             <div class="output-header">
                 <h3>📝 Formatted Output</h3>
                 <div class="output-controls">
-                    <button id="expandAllBtn" class="btn btn-secondary btn-small">📖 Expand All</button>
-                    <button id="collapseAllBtn" class="btn btn-secondary btn-small">📕 Collapse All</button>
+                    <button id="expandAllBtn" class="btn btn-secondary btn-small" title="Ctrl+Shift+E">📖 Expand All</button>
+                    <button id="collapseAllBtn" class="btn btn-secondary btn-small" title="Ctrl+Shift+L">📕 Collapse All</button>
                     <button id="copyBtn" class="btn btn-secondary">📋 Copy</button>
                     <button id="exportBtn" class="btn btn-secondary">💾 Export</button>
                 </div>
@@ -137,5 +137,32 @@
     <div id="offlineIndicator" class="offline-indicator" style="display: none;">⚠️ Offline</div>
 
     <script src="app.js"></script>
+    
+    <!-- Keyboard Shortcuts Help -->
+    <div id="shortcutsHelp" class="shortcuts-help" style="display: none;">
+        <div class="shortcuts-content">
+            <h3>⌨️ Keyboard Shortcuts</h3>
+            <ul>
+                <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> - Format JSON</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> - Minify JSON</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> - Validate JSON</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> - Clear</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> - Expand All</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> - Collapse All</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> - Undo</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> - Redo</li>
+                <li><kbd>Tab</kbd> - Insert 4 spaces</li>
+                <li><kbd>Shift</kbd>+<kbd>Tab</kbd> - Remove indent</li>
+            </ul>
+            <button onclick="document.getElementById('shortcutsHelp').style.display='none'">Close</button>
+        </div>
+    </div>
+    
+    <button id="helpBtn" class="help-button" title="Keyboard Shortcuts">❓</button>
+    <script>
+        document.getElementById('helpBtn').addEventListener('click', () => {
+            document.getElementById('shortcutsHelp').style.display = 'flex';
+        });
+    </script>
 </body>
 </html>

@@ -19,11 +19,18 @@ class JSONFormatter {
         this.collapseState = new Map();
         this.currentData = null;
         
+        // Undo/Redo history
+        this.history = [];
+        this.historyIndex = -1;
+        this.maxHistorySize = 50;
+        
         this.init();
     }
     
     init() {
         this.addEventListeners();
+        this.setupKeyboardShortcuts();
+        this.setupUndoRedo();
         this.loadSampleData();
     }
     
@@ -44,16 +51,114 @@ class JSONFormatter {
         // Add click delegation for collapsible nodes
         this.jsonOutput.addEventListener('click', (e) => this.handleNodeClick(e));
         
+        // Tab support in textarea
         this.jsonInput.addEventListener('keydown', (e) => {
             if (e.key === 'Tab') {
                 e.preventDefault();
                 const start = this.jsonInput.selectionStart;
                 const end = this.jsonInput.selectionEnd;
-                this.jsonInput.value = this.jsonInput.value.substring(0, start) + '    ' + 
+                const indent = e.shiftKey ? '' : '    ';
+                this.jsonInput.value = this.jsonInput.value.substring(0, start) + indent + 
                                        this.jsonInput.value.substring(end);
-                this.jsonInput.selectionStart = this.jsonInput.selectionEnd = start + 4;
+                this.jsonInput.selectionStart = this.jsonInput.selectionEnd = start + indent.length;
             }
         });
+        
+        // Auto-save to history on input
+        let debounceTimer;
+        this.jsonInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => this.saveToHistory(), 1000);
+        });
+    }
+    
+    setupKeyboardShortcuts() {
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Enter = Format
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                this.format();
+            }
+            // Ctrl/Cmd + Shift + M = Minify
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'M') {
+                e.preventDefault();
+                this.minify();
+            }
+            // Ctrl/Cmd + Shift + V = Validate
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'V') {
+                e.preventDefault();
+                this.validate();
+            }
+            // Ctrl/Cmd + Shift + C = Clear
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+                e.preventDefault();
+                this.clear();
+            }
+            // Ctrl/Cmd + Shift + E = Expand All
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'E') {
+                e.preventDefault();
+                this.expandAll();
+            }
+            // Ctrl/Cmd + Shift + L = Collapse All
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'L') {
+                e.preventDefault();
+                this.collapseAll();
+            }
+        });
+    }
+    
+    setupUndoRedo() {
+        document.addEventListener('keydown', (e) => {
+            // Ctrl/Cmd + Z = Undo
+            if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                e.preventDefault();
+                this.undo();
+            }
+            // Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y = Redo
+            if (((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z') ||
+                ((e.ctrlKey || e.metaKey) && e.key === 'y')) {
+                e.preventDefault();
+                this.redo();
+            }
+        });
+    }
+    
+    saveToHistory() {
+        const currentValue = this.jsonInput.value;
+        // Don't save if same as last
+        if (this.historyIndex >= 0 && this.history[this.historyIndex] === currentValue) {
+            return;
+        }
+        
+        // Remove future history if we're in the middle
+        if (this.historyIndex < this.history.length - 1) {
+            this.history = this.history.slice(0, this.historyIndex + 1);
+        }
+        
+        this.history.push(currentValue);
+        
+        // Limit history size
+        if (this.history.length > this.maxHistorySize) {
+            this.history.shift();
+        } else {
+            this.historyIndex++;
+        }
+    }
+    
+    undo() {
+        if (this.historyIndex > 0) {
+            this.historyIndex--;
+            this.jsonInput.value = this.history[this.historyIndex];
+            this.hideError();
+        }
+    }
+    
+    redo() {
+        if (this.historyIndex < this.history.length - 1) {
+            this.historyIndex++;
+            this.jsonInput.value = this.history[this.historyIndex];
+            this.hideError();
+        }
     }
     
     loadSampleData() {
@@ -66,7 +171,9 @@ class JSONFormatter {
                 "Minify JSON for production",
                 "Validate JSON syntax",
                 "Syntax highlighting",
-                "Collapsible nodes"
+                "Collapsible nodes",
+                "Keyboard shortcuts",
+                "Undo/Redo support"
             ],
             "author": "Agent-Lumi",
             "github": "https://github.com/Agent-Lumi/json-formatter-beautiful",
@@ -83,6 +190,7 @@ class JSONFormatter {
         };
         
         this.jsonInput.value = JSON.stringify(sample, null, 2);
+        this.saveToHistory();
         this.format();
     }
     
@@ -121,6 +229,11 @@ class JSONFormatter {
         // Update stats
         const formatted = JSON.stringify(data, null, indent);
         this.updateStats(data, formatted);
+        
+        // Track this action
+        if (window.usageDashboard) {
+            window.usageDashboard.trackFormat();
+        }
     }
     
     minify() {
@@ -131,6 +244,10 @@ class JSONFormatter {
         const minified = JSON.stringify(data);
         this.displayOutput(minified);
         this.updateStats(data, minified);
+        
+        if (window.usageDashboard) {
+            window.usageDashboard.trackMinify();
+        }
     }
     
     validate() {
@@ -139,6 +256,10 @@ class JSONFormatter {
             this.hideError();
             this.showToast('✅ Valid JSON!');
             this.format();
+        }
+        
+        if (window.usageDashboard) {
+            window.usageDashboard.trackValidate();
         }
     }
     
@@ -226,13 +347,14 @@ class JSONFormatter {
     }
     
     escapeString(str) {
+        // Fix: Properly escape special characters for HTML display
         return str
             .replace(/\\/g, '\\\\')
             .replace(/"/g, '\\"')
             .replace(/\n/g, '\\n')
             .replace(/\r/g, '\\r')
             .replace(/\t/g, '\\t')
-            .replace(/\u007f-\uffff/g, (c) => {
+            .replace(/[\x00-\x1f\x7f-\x9f]/g, (c) => {
                 return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
             });
     }
@@ -335,9 +457,9 @@ class JSONFormatter {
     }
     
     syntaxHighlight(json) {
-        json = json.replace(/\u0026/g, '&amp;')
-                   .replace(/\u003c/g, '&lt;')
-                   .replace(/\u003e/g, '&gt;');
+        json = json.replace(/\u0026/g, '\u0026amp;')
+                   .replace(/\u003c/g, '\u0026lt;')
+                   .replace(/\u003e/g, '\u0026gt;');
         
         return json.replace(
             /("(?:[^"\\\\]|\\\\.)*")|(\b(?:true|false|null)\b)|(-?\d+\.?\d*)|([{}\[\]])|([:,])/g,
@@ -397,12 +519,23 @@ class JSONFormatter {
         this.hideError();
         this.statsSection.style.display = 'none';
         this.collapseState.clear();
+        this.saveToHistory();
     }
     
     copy() {
         const code = this.jsonOutput.textContent;
+        if (!code || code.includes('// Formatted JSON')) {
+            this.showToast('❌ Nothing to copy!');
+            return;
+        }
+        
         navigator.clipboard.writeText(code).then(() => {
             this.showToast('📋 Copied to clipboard!');
+            if (window.usageDashboard) {
+                window.usageDashboard.trackCopy();
+            }
+        }).catch(() => {
+            this.showToast('❌ Failed to copy');
         });
     }
     
@@ -416,6 +549,10 @@ class JSONFormatter {
     }
     
     showToast(message) {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(t => t.remove());
+        
         const toast = document.createElement('div');
         toast.className = 'toast';
         toast.textContent = message;
@@ -429,7 +566,8 @@ class JSONFormatter {
     }
 }
 
-new JSONFormatter();
+// Make formatter globally accessible
+window.jsonFormatter = new JSONFormatter();
 
 // ============================================
 // USAGE STATISTICS DASHBOARD
@@ -448,6 +586,7 @@ class UsageDashboard {
         this.loadDarkMode();
         this.setupOfflineIndicator();
         this.setupShareButton();
+        this.setupPWAInstall();
         
         // Track this visit
         if (!this.stats.firstVisit) {
@@ -520,7 +659,14 @@ class UsageDashboard {
                         if (textarea) {
                             textarea.value = e.target.result;
                             this.trackImport(file.name);
+                            // Auto-format after import
+                            if (window.jsonFormatter) {
+                                window.jsonFormatter.format();
+                            }
                         }
+                    };
+                    reader.onerror = () => {
+                        this.showToast('❌ Failed to read file');
                     };
                     reader.readAsText(file);
                 };
@@ -533,7 +679,10 @@ class UsageDashboard {
         if (exportBtn) {
             exportBtn.addEventListener('click', () => {
                 const content = document.getElementById('jsonOutput').textContent;
-                if (!content || content.includes('// Formatted JSON')) return;
+                if (!content || content.includes('// Formatted JSON')) {
+                    this.showToast('❌ Nothing to export!');
+                    return;
+                }
                 
                 const blob = new Blob([content], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
@@ -710,7 +859,7 @@ class UsageDashboard {
             if (navigator.share) {
                 try {
                     await navigator.share({
-                        title: 'JSON Formatter & Beautifier',
+                        title: 'JSON Formatter \u0026 Beautifier',
                         text: 'Check out this awesome JSON formatter!',
                         url: window.location.href
                     });
@@ -720,12 +869,76 @@ class UsageDashboard {
             } else {
                 // Fallback to clipboard
                 navigator.clipboard.writeText(window.location.href);
-                shareBtn.textContent = '✅ Copied!';
-                setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
+                this.showToast('✅ URL copied to clipboard!');
             }
         });
     }
+    
+    setupPWAInstall() {
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Store the event for later use
+            this.deferredPrompt = e;
+            // Show install button if exists
+            this.showInstallButton();
+        });
+        
+        // Hide install button when app is installed
+        window.addEventListener('appinstalled', () => {
+            this.hideInstallButton();
+            this.deferredPrompt = null;
+        });
+    }
+    
+    showInstallButton() {
+        // Check if button already exists
+        let installBtn = document.getElementById('installBtn');
+        if (!installBtn && this.deferredPrompt) {
+            installBtn = document.createElement('button');
+            installBtn.id = 'installBtn';
+            installBtn.className = 'install-button';
+            installBtn.innerHTML = '📱 Install App';
+            document.body.appendChild(installBtn);
+            
+            installBtn.addEventListener('click', async () => {
+                if (!this.deferredPrompt) return;
+                this.deferredPrompt.prompt();
+                const { outcome } = await this.deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    this.showToast('✅ App installed!');
+                }
+                this.deferredPrompt = null;
+                this.hideInstallButton();
+            });
+        }
+    }
+    
+    hideInstallButton() {
+        const installBtn = document.getElementById('installBtn');
+        if (installBtn) {
+            installBtn.remove();
+        }
+    }
+    
+    showToast(message) {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(t => t.remove());
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
 }
 
-// Initialize usage dashboard
-new UsageDashboard();
+// Initialize usage dashboard and make it globally accessible
+window.usageDashboard = new UsageDashboard();
