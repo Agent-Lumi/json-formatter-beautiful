@@ -430,3 +430,302 @@ class JSONFormatter {
 }
 
 new JSONFormatter();
+
+// ============================================
+// USAGE STATISTICS DASHBOARD
+// ============================================
+class UsageDashboard {
+    constructor() {
+        this.stats = this.loadStats();
+        this.sessionStart = Date.now();
+        this.init();
+    }
+    
+    init() {
+        this.setupEventListeners();
+        this.updateDisplay();
+        this.startSessionTimer();
+        this.loadDarkMode();
+        this.setupOfflineIndicator();
+        this.setupShareButton();
+        
+        // Track this visit
+        if (!this.stats.firstVisit) {
+            this.stats.firstVisit = new Date().toISOString();
+        }
+        this.stats.totalVisits = (this.stats.totalVisits || 0) + 1;
+        this.stats.lastVisit = new Date().toISOString();
+        this.saveStats();
+        
+        // Add initial activity
+        this.addActivity('👋', 'App opened', 'Session started');
+    }
+    
+    loadStats() {
+        const saved = localStorage.getItem('jsonFormatterStats');
+        return saved ? JSON.parse(saved) : {
+            totalFormats: 0,
+            totalValidations: 0,
+            totalMinifies: 0,
+            totalCopies: 0,
+            totalExports: 0,
+            totalImports: 0,
+            activityLog: [],
+            firstVisit: null,
+            lastVisit: null,
+            totalVisits: 0
+        };
+    }
+    
+    saveStats() {
+        localStorage.setItem('jsonFormatterStats', JSON.stringify(this.stats));
+    }
+    
+    setupEventListeners() {
+        // Dashboard toggle
+        const toggleBtn = document.getElementById('toggleDashboard');
+        const dashboardContent = document.getElementById('dashboardContent');
+        if (toggleBtn && dashboardContent) {
+            toggleBtn.addEventListener('click', () => {
+                const isCollapsed = dashboardContent.classList.toggle('collapsed');
+                toggleBtn.textContent = isCollapsed ? '▶ Show' : '▼ Hide';
+            });
+        }
+        
+        // Dark mode toggle
+        const darkModeBtn = document.getElementById('darkModeToggle');
+        if (darkModeBtn) {
+            darkModeBtn.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                const isDark = document.body.classList.contains('dark-mode');
+                darkModeBtn.textContent = isDark ? '☀️' : '🌙';
+                localStorage.setItem('darkMode', isDark);
+            });
+        }
+        
+        // Import button
+        const importBtn = document.getElementById('importBtn');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.json,.txt';
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const textarea = document.getElementById('jsonInput');
+                        if (textarea) {
+                            textarea.value = e.target.result;
+                            this.trackImport(file.name);
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+                input.click();
+            });
+        }
+        
+        // Export button
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', () => {
+                const content = document.getElementById('jsonOutput').textContent;
+                if (!content || content.includes('// Formatted JSON')) return;
+                
+                const blob = new Blob([content], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `formatted-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                this.trackExport();
+            });
+        }
+        
+        // Intercept formatter methods to track usage
+        this.interceptFormatter();
+    }
+    
+    interceptFormatter() {
+        // Wait for formatter to initialize
+        setTimeout(() => {
+            const formatBtn = document.getElementById('formatBtn');
+            const minifyBtn = document.getElementById('minifyBtn');
+            const validateBtn = document.getElementById('validateBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            if (formatBtn) {
+                formatBtn.addEventListener('click', () => this.trackFormat(), true);
+            }
+            if (minifyBtn) {
+                minifyBtn.addEventListener('click', () => this.trackMinify(), true);
+            }
+            if (validateBtn) {
+                validateBtn.addEventListener('click', () => this.trackValidate(), true);
+            }
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => this.trackCopy(), true);
+            }
+        }, 100);
+    }
+    
+    trackFormat() {
+        this.stats.totalFormats++;
+        this.saveStats();
+        this.updateDisplay();
+        this.addActivity('✨', 'JSON Formatted', 'Document formatted');
+    }
+    
+    trackMinify() {
+        this.stats.totalMinifies++;
+        this.saveStats();
+        this.updateDisplay();
+        this.addActivity('📦', 'JSON Minified', 'Document minified');
+    }
+    
+    trackValidate() {
+        this.stats.totalValidations++;
+        this.saveStats();
+        this.updateDisplay();
+        this.addActivity('✅', 'JSON Validated', 'Validation check');
+    }
+    
+    trackCopy() {
+        this.stats.totalCopies++;
+        this.saveStats();
+        this.updateDisplay();
+        this.addActivity('📋', 'Copied', 'Output copied to clipboard');
+    }
+    
+    trackExport(filename) {
+        this.stats.totalExports++;
+        this.saveStats();
+        this.updateDisplay();
+        this.addActivity('💾', 'Exported', `Saved to ${filename || 'file'}`);
+    }
+    
+    trackImport(filename) {
+        this.stats.totalImports++;
+        this.saveStats();
+        this.updateDisplay();
+        this.addActivity('📁', 'Imported', `Loaded ${filename || 'file'}`);
+    }
+    
+    addActivity(icon, action, detail) {
+        const activity = {
+            icon,
+            action,
+            detail,
+            timestamp: Date.now(),
+            time: new Date().toLocaleTimeString()
+        };
+        
+        this.stats.activityLog.unshift(activity);
+        // Keep only last 20 activities
+        if (this.stats.activityLog.length > 20) {
+            this.stats.activityLog = this.stats.activityLog.slice(0, 20);
+        }
+        
+        this.saveStats();
+        this.updateActivityLog();
+    }
+    
+    updateDisplay() {
+        // Update counters
+        document.getElementById('totalFormats').textContent = this.stats.totalFormats || 0;
+        document.getElementById('totalValidations').textContent = this.stats.totalValidations || 0;
+        document.getElementById('totalMinifies').textContent = this.stats.totalMinifies || 0;
+        document.getElementById('totalCopies').textContent = this.stats.totalCopies || 0;
+        
+        // Update first visit
+        if (this.stats.firstVisit) {
+            const date = new Date(this.stats.firstVisit);
+            document.getElementById('firstVisit').textContent = 
+                date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        }
+        
+        this.updateActivityLog();
+    }
+    
+    updateActivityLog() {
+        const container = document.getElementById('activityLog');
+        if (!container) return;
+        
+        if (!this.stats.activityLog || this.stats.activityLog.length === 0) {
+            container.innerHTML = '<div class="activity-empty">No activity yet. Start formatting JSON!</div>';
+            return;
+        }
+        
+        container.innerHTML = this.stats.activityLog.map(activity => `
+            <div class="activity-item">
+                <span class="activity-icon">${activity.icon}</span>
+                <span class="activity-text">${activity.action}${activity.detail ? ` <small>(${activity.detail})</small>` : ''}</span>
+                <span class="activity-time">${activity.time}</span>
+            </div>
+        `).join('');
+    }
+    
+    startSessionTimer() {
+        setInterval(() => {
+            const elapsed = Math.floor((Date.now() - this.sessionStart) / 1000);
+            const minutes = Math.floor(elapsed / 60).toString().padStart(2, '0');
+            const seconds = (elapsed % 60).toString().padStart(2, '0');
+            const timerEl = document.getElementById('sessionTime');
+            if (timerEl) timerEl.textContent = `${minutes}:${seconds}`;
+        }, 1000);
+    }
+    
+    loadDarkMode() {
+        const isDark = localStorage.getItem('darkMode') === 'true';
+        if (isDark) {
+            document.body.classList.add('dark-mode');
+            const toggle = document.getElementById('darkModeToggle');
+            if (toggle) toggle.textContent = '☀️';
+        }
+    }
+    
+    setupOfflineIndicator() {
+        const indicator = document.getElementById('offlineIndicator');
+        if (!indicator) return;
+        
+        const updateOnlineStatus = () => {
+            indicator.style.display = navigator.onLine ? 'none' : 'block';
+        };
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        updateOnlineStatus();
+    }
+    
+    setupShareButton() {
+        const shareBtn = document.getElementById('shareBtn');
+        if (!shareBtn) return;
+        
+        shareBtn.addEventListener('click', async () => {
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'JSON Formatter & Beautifier',
+                        text: 'Check out this awesome JSON formatter!',
+                        url: window.location.href
+                    });
+                } catch (err) {
+                    console.log('Share cancelled');
+                }
+            } else {
+                // Fallback to clipboard
+                navigator.clipboard.writeText(window.location.href);
+                shareBtn.textContent = '✅ Copied!';
+                setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
+            }
+        });
+    }
+}
+
+// Initialize usage dashboard
+new UsageDashboard();
