@@ -194,3 +194,90 @@ if (!localStorage.getItem('tutorial-shown')) {
     localStorage.setItem('tutorial-shown', 'true');
 }
 </script>
+
+<script>
+// Enhanced Keyboard Shortcuts System
+(function() {
+    const keyboardShortcuts = {
+        'Ctrl+Enter': { action: () => document.getElementById('formatBtn')?.click(), desc: 'Format JSON' },
+        'Ctrl+Shift+M': { action: () => document.getElementById('minifyBtn')?.click(), desc: 'Minify JSON' },
+        'Ctrl+Shift+V': { action: () => document.getElementById('validateBtn')?.click(), desc: 'Validate JSON' },
+        'Ctrl+Shift+C': { action: () => document.getElementById('clearBtn')?.click(), desc: 'Clear' },
+        'Ctrl+Shift+E': { action: () => document.getElementById('expandAllBtn')?.click(), desc: 'Expand All' },
+        'Ctrl+Shift+L': { action: () => document.getElementById('collapseAllBtn')?.click(), desc: 'Collapse All' },
+        'Ctrl+Shift+S': { action: () => document.getElementById('exportBtn')?.click(), desc: 'Export/Save' },
+        'Ctrl+D': { action: () => document.getElementById('copyBtn')?.click(), desc: 'Copy to Clipboard' },
+        'Ctrl+/': { action: () => document.getElementById('helpBtn')?.click(), desc: 'Show Help' },
+        'Escape': { action: () => {
+            const helpModal = document.getElementById('shortcutsHelp');
+            if (helpModal) helpModal.style.display = 'none';
+        }, desc: 'Close Help' }
+    };
+    
+    // Build key from event
+    function getKeyCombo(e) {
+        const parts = [];
+        if (e.ctrlKey) parts.push('Ctrl');
+        if (e.altKey) parts.push('Alt');
+        if (e.shiftKey) parts.push('Shift');
+        if (e.key.length === 1) parts.push(e.key.toUpperCase());
+        else if (e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Shift') parts.push(e.key);
+        return parts.join('+');
+    }
+    
+    // Handle keyboard events
+    document.addEventListener('keydown', function(e) {
+        // Don't trigger shortcuts when typing in inputs (except textarea for specific shortcuts)
+        const tagName = e.target.tagName.toLowerCase();
+        const isTextInput = tagName === 'input' || tagName === 'textarea';
+        
+        // Tab handling for textarea
+        if (e.key === 'Tab' && e.target.id === 'jsonInput') {
+            e.preventDefault();
+            const start = e.target.selectionStart;
+            const end = e.target.selectionEnd;
+            const spaces = '    ';
+            e.target.value = e.target.value.substring(0, start) + spaces + e.target.value.substring(end);
+            e.target.selectionStart = e.target.selectionEnd = start + spaces.length;
+            return;
+        }
+        
+        // Check for keyboard shortcut
+        const keyCombo = getKeyCombo(e);
+        if (keyboardShortcuts[keyCombo]) {
+            // Don't trigger format/minify/validate while typing unless Ctrl+Enter
+            if (isTextInput && keyCombo !== 'Ctrl+Enter' && keyCombo !== 'Escape') {
+                return;
+            }
+            e.preventDefault();
+            keyboardShortcuts[keyCombo].action();
+            
+            // Visual feedback
+            showShortcutFeedback(keyboardShortcuts[keyCombo].desc);
+        }
+    });
+    
+    // Visual feedback for shortcut activation
+    function showShortcutFeedback(action) {
+        const feedback = document.createElement('div');
+        feedback.textContent = '⌨️ ' + action;
+        feedback.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#4CAF50;color:white;padding:8px 16px;border-radius:4px;font-size:14px;z-index:9999;animation:fadeInOut 1.5s ease';
+        document.body.appendChild(feedback);
+        setTimeout(() => feedback.remove(), 1400);
+    }
+    
+    // Add animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
+            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    console.log('✓ Keyboard shortcuts loaded');
+})();
+</script>
