@@ -44,6 +44,35 @@
             </div>
         </div>
 
+        <!-- JSONPath Query Section -->
+        <div class="jsonpath-section" id="jsonpathSection" style="display: none;">
+            <div class="jsonpath-header">
+                <h3>🔍 JSONPath Query</h3>
+                <div class="jsonpath-controls">
+                    <button id="jsonpathHelpBtn" class="btn btn-secondary btn-small">❓ Help</button>
+                    <button id="clearJsonpathBtn" class="btn btn-secondary btn-small">🗑️ Clear</button>
+                </div>
+            </div>
+            <div class="jsonpath-input-row">
+                <input type="text" id="jsonpathInput" class="jsonpath-input" placeholder="$.store.book[?(@.price < 10)].title" spellcheck="false">
+                <button id="jsonpathExecuteBtn" class="btn btn-primary" title="Ctrl+Shift+P">▶️ Execute</button>
+            </div>
+            <div class="jsonpath-examples">
+                <span class="jsonpath-label">Examples:</span>
+                <button class="jsonpath-example" data-query="$">Get entire JSON</button>
+                <button class="jsonpath-example" data-query="$.store.book[*].title">Get all book titles</button>
+                <button class="jsonpath-example" data-query="$..price">Get all prices</button>
+                <button class="jsonpath-example" data-query="$.store.book[?(@.price < 10)]">Books under $10</button>
+            </div>
+            <div class="jsonpath-result" id="jsonpathResult">
+                <pre id="jsonpathOutput"><code>// Query results will appear here...</code></pre>
+            </div>
+            <div class="jsonpath-actions">
+                <button id="copyJsonpathBtn" class="btn btn-secondary btn-small">📋 Copy Result</button>
+                <span id="jsonpathMatchCount" class="jsonpath-match-count"></span>
+            </div>
+        </div>
+
         <div class="output-section">
             <div class="output-header">
                 <h3>📝 Formatted Output</h3>
@@ -149,12 +178,87 @@
                 <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> - Clear</li>
                 <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> - Expand All</li>
                 <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> - Collapse All</li>
+                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> - Execute JSONPath</li>
                 <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> - Undo</li>
                 <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> - Redo</li>
                 <li><kbd>Tab</kbd> - Insert 4 spaces</li>
                 <li><kbd>Shift</kbd>+<kbd>Tab</kbd> - Remove indent</li>
             </ul>
             <button onclick="document.getElementById('shortcutsHelp').style.display='none'">Close</button>
+        </div>
+    </div>
+
+    <!-- JSONPath Help Modal -->
+    <div id="jsonpathHelpModal" class="shortcuts-help" style="display: none;">
+        <div class="shortcuts-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <h3>🔍 JSONPath Reference</h3>
+            <p style="color: #888; margin-bottom: 20px;">JSONPath is a query language for JSON, similar to XPath for XML.</p>
+            
+            <h4 style="color: #fff; margin: 20px 0 10px;">Basic Syntax</h4>
+            <table style="width: 100%; color: #ccc; font-size: 0.9rem; border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>$</code></td>
+                    <td style="padding: 8px;">Root object/element</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>@</code></td>
+                    <td style="padding: 8px;">Current object/element</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>.property</code></td>
+                    <td style="padding: 8px;">Selects the property</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>['property']</code></td>
+                    <td style="padding: 8px;">Selects the property (bracket notation)</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>[n]</code></td>
+                    <td style="padding: 8px;">Array index</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>[0, n]</code></td>
+                    <td style="padding: 8px;">Union of indices</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>[start:end]</code></td>
+                    <td style="padding: 8px;">Array slice</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>[*]</code></td>
+                    <td style="padding: 8px;">All array elements</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>[?(expression)]</code></td>
+                    <td style="padding: 8px;">Filter expression</td>
+                </tr>
+                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <td style="padding: 8px;"><code>..property</code></td>
+                    <td style="padding: 8px;">Recursive descent</td>
+                </tr>
+            </table>
+
+            <h4 style="color: #fff; margin: 20px 0 10px;">Filter Operators</h4>
+            <ul style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">
+                <li><code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code> - Comparison</li>
+                <li><code>=~</code> - Regular expression match</li>
+                <li><code>in</code> - Check if value is in array</li>
+                <li><code>contains</code> - Check if string contains substring</li>
+                <li><code>size</code> - Array/string length</li>
+                <li><code>!expression</code> - Negation</li>
+            </ul>
+
+            <h4 style="color: #fff; margin: 20px 0 10px;">Examples</h4>
+            <ul style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">
+                <li><code>$.store.book[*].author</code> - All book authors</li>
+                <li><code>$..author</code> - All authors anywhere</li>
+                <li><code>$.store.book[0]</code> - First book</li>
+                <li><code>$.store.book[-1:]</code> - Last book</li>
+                <li><code>$.store.book[?(@.price < 10)]</code> - Books under $10</li>
+                <li><code>$.store.book[?(@.category == 'fiction')]</code> - Fiction books</li>
+            </ul>
+
+            <button onclick="document.getElementById('jsonpathHelpModal').style.display='none'" style="width: 100%;">Close</button>
         </div>
     </div>
     
@@ -205,12 +309,15 @@ if (!localStorage.getItem('tutorial-shown')) {
         'Ctrl+Shift+C': { action: () => document.getElementById('clearBtn')?.click(), desc: 'Clear' },
         'Ctrl+Shift+E': { action: () => document.getElementById('expandAllBtn')?.click(), desc: 'Expand All' },
         'Ctrl+Shift+L': { action: () => document.getElementById('collapseAllBtn')?.click(), desc: 'Collapse All' },
+        'Ctrl+Shift+P': { action: () => document.getElementById('jsonpathExecuteBtn')?.click(), desc: 'Execute JSONPath' },
         'Ctrl+Shift+S': { action: () => document.getElementById('exportBtn')?.click(), desc: 'Export/Save' },
         'Ctrl+D': { action: () => document.getElementById('copyBtn')?.click(), desc: 'Copy to Clipboard' },
         'Ctrl+/': { action: () => document.getElementById('helpBtn')?.click(), desc: 'Show Help' },
         'Escape': { action: () => {
             const helpModal = document.getElementById('shortcutsHelp');
+            const jsonpathModal = document.getElementById('jsonpathHelpModal');
             if (helpModal) helpModal.style.display = 'none';
+            if (jsonpathModal) jsonpathModal.style.display = 'none';
         }, desc: 'Close Help' }
     };
     

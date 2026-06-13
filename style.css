@@ -633,7 +633,155 @@ code {
     font-weight: 500;
 }
 
+/* JSONPath Section */
+.jsonpath-section {
+    background: rgba(255,255,255,0.05);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+}
+
+.jsonpath-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.jsonpath-header h3 {
+    color: #fff;
+    margin: 0;
+}
+
+.jsonpath-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.jsonpath-input-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.jsonpath-input {
+    flex: 1;
+    padding: 12px 15px;
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.jsonpath-input:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+}
+
+.jsonpath-input::placeholder {
+    color: #666;
+}
+
+.jsonpath-examples {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+}
+
+.jsonpath-label {
+    color: #888;
+    font-size: 0.85rem;
+    margin-right: 8px;
+}
+
+.jsonpath-example {
+    padding: 5px 12px;
+    background: rgba(102, 126, 234, 0.2);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 15px;
+    color: #667eea;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.jsonpath-example:hover {
+    background: rgba(102, 126, 234, 0.4);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.jsonpath-result {
+    background: #0d1117;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 12px;
+    min-height: 100px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.jsonpath-result pre {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+}
+
+.jsonpath-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.jsonpath-match-count {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+.jsonpath-match-count.has-matches {
+    color: #4CAF50;
+}
+
+.jsonpath-match-count.no-matches {
+    color: #ff6b6b;
+}
+
+/* Mobile Responsive for JSONPath */
 @media (max-width: 600px) {
+    .jsonpath-input-row {
+        flex-direction: column;
+    }
+    
+    .jsonpath-input {
+        width: 100%;
+    }
+    
+    .jsonpath-examples {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .jsonpath-example {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .jsonpath-header {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
     h1 {
         font-size: 1.8rem;
     }

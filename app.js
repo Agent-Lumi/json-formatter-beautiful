@@ -940,5 +940,446 @@ class UsageDashboard {
     }
 }
 
+// ============================================
+// JSONPath Query Engine
+// ============================================
+class JSONPathEngine {
+    constructor() {
+        this.currentData = null;
+        this.init();
+    }
+    
+    init() {
+        this.setupEventListeners();
+    }
+    
+    setupEventListeners() {
+        const executeBtn = document.getElementById('jsonpathExecuteBtn');
+        const input = document.getElementById('jsonpathInput');
+        const clearBtn = document.getElementById('clearJsonpathBtn');
+        const copyBtn = document.getElementById('copyJsonpathBtn');
+        const helpBtn = document.getElementById('jsonpathHelpBtn');
+        const examples = document.querySelectorAll('.jsonpath-example');
+        
+        if (executeBtn) {
+            executeBtn.addEventListener('click', () => this.execute());
+        }
+        
+        if (input) {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.execute();
+                }
+            });
+        }
+        
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => this.clear());
+        }
+        
+        if (copyBtn) {
+            copyBtn.addEventListener('click', () => this.copyResult());
+        }
+        
+        if (helpBtn) {
+            helpBtn.addEventListener('click', () => {
+                const modal = document.getElementById('jsonpathHelpModal');
+                if (modal) modal.style.display = 'flex';
+            });
+        }
+        
+        examples.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const query = btn.dataset.query;
+                if (query && input) {
+                    input.value = query;
+                    this.execute();
+                }
+            });
+        });
+        
+        // Listen for format events to update current data
+        const formatBtn = document.getElementById('formatBtn');
+        if (formatBtn) {
+            formatBtn.addEventListener('click', () => {
+                setTimeout(() => this.updateCurrentData(), 100);
+            });
+        }
+        
+        // Close modal on outside click
+        const modal = document.getElementById('jsonpathHelpModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    }
+    
+    updateCurrentData() {
+        const jsonInput = document.getElementById('jsonInput');
+        const jsonpathSection = document.getElementById('jsonpathSection');
+        
+        if (!jsonInput || !jsonpathSection) return;
+        
+        try {
+            const text = jsonInput.value.trim();
+            if (text) {
+                this.currentData = JSON.parse(text);
+                jsonpathSection.style.display = 'block';
+            }
+        } catch (e) {
+            // Invalid JSON, hide section
+            jsonpathSection.style.display = 'none';
+        }
+    }
+    
+    execute() {
+        this.updateCurrentData();
+        
+        if (!this.currentData) {
+            this.showError('Please format valid JSON first');
+            return;
+        }
+        
+        const input = document.getElementById('jsonpathInput');
+        const query = input.value.trim();
+        
+        if (!query) {
+            this.showError('Please enter a JSONPath query');
+            return;
+        }
+        
+        try {
+            const results = this.evaluate(query, this.currentData);
+            this.displayResults(results);
+            this.updateMatchCount(results);
+            
+            // Track JSONPath execution
+            if (window.usageDashboard) {
+                window.usageDashboard.trackActivity('🔍', 'JSONPath executed', query.substring(0, 30) + '...');
+            }
+        } catch (e) {
+            this.showError('Query error: ' + e.message);
+        }
+    }
+    
+    // JSONPath implementation
+    evaluate(path, json) {
+        if (path === '
+) return [json];
+        
+        let results = [json];
+        let i = 0;
+        
+        while (i < path.length) {
+            const char = path[i];
+            
+            if (char === '
+) {
+                i++;
+                continue;
+            }
+            
+            if (char === '.') {
+                // Check for recursive descent
+                if (path[i + 1] === '.') {
+                    i += 2;
+                    const key = this.readKey(path, i);
+                    i += key.length;
+                    results = this.recursiveDescent(results, key);
+                } else {
+                    i++;
+                    const key = this.readKey(path, i);
+                    i += key.length;
+                    results = this.selectProperty(results, key);
+                }
+            } else if (char === '[') {
+                const end = path.indexOf(']', i);
+                if (end === -1) throw new Error('Unmatched bracket');
+                
+                const content = path.substring(i + 1, end);
+                results = this.handleBracket(content, results);
+                i = end + 1;
+            } else {
+                i++;
+            }
+        }
+        
+        return results;
+    }
+    
+    readKey(path, start) {
+        let end = start;
+        while (end < path.length && !['.', '[', ' '].includes(path[end])) {
+            end++;
+        }
+        return path.substring(start, end);
+    }
+    
+    selectProperty(data, key) {
+        const results = [];
+        for (const item of data) {
+            if (item && typeof item === 'object' && key in item) {
+                results.push(item[key]);
+            }
+        }
+        return results;
+    }
+    
+    recursiveDescent(data, key) {
+        const results = [];
+        const visited = new Set();
+        
+        const traverse = (obj) => {
+            if (!obj || typeof obj !== 'object') return;
+            if (visited.has(obj)) return;
+            visited.add(obj);
+            
+            if (key && key in obj) {
+                results.push(obj[key]);
+            }
+            
+            for (const val of Object.values(obj)) {
+                traverse(val);
+            }
+        };
+        
+        for (const item of data) {
+            traverse(item);
+        }
+        
+        return results;
+    }
+    
+    handleBracket(content, data) {
+        // Filter expression
+        if (content.startsWith('?(')) {
+            return this.handleFilter(content.slice(2, -1), data);
+        }
+        
+        // Union
+        if (content.includes(',')) {
+            const indices = content.split(',').map(s => parseInt(s.trim()));
+            const results = [];
+            for (const item of data) {
+                if (Array.isArray(item)) {
+                    for (const idx of indices) {
+                        if (idx >= 0 && idx < item.length) {
+                            results.push(item[idx]);
+                        }
+                    }
+                }
+            }
+            return results;
+        }
+        
+        // Slice
+        if (content.includes(':')) {
+            const parts = content.split(':').map(s => s.trim() === '' ? null : parseInt(s.trim()));
+            const results = [];
+            for (const item of data) {
+                if (Array.isArray(item)) {
+                    const start = parts[0] || 0;
+                    const end = parts[1] !== null ? parts[1] : item.length;
+                    const sliced = item.slice(start, end);
+                    results.push(...sliced);
+                }
+            }
+            return results;
+        }
+        
+        // Single index or key
+        const index = parseInt(content);
+        if (!isNaN(index)) {
+            const results = [];
+            for (const item of data) {
+                if (Array.isArray(item) && index >= 0 && index < item.length) {
+                    results.push(item[index]);
+                }
+            }
+            return results;
+        }
+        
+        // Wildcard
+        if (content === '*') {
+            const results = [];
+            for (const item of data) {
+                if (Array.isArray(item)) {
+                    results.push(...item);
+                } else if (item && typeof item === 'object') {
+                    results.push(...Object.values(item));
+                }
+            }
+            return results;
+        }
+        
+        return data;
+    }
+    
+    handleFilter(expr, data) {
+        const results = [];
+        
+        for (const item of data) {
+            if (!Array.isArray(item) && !(item && typeof item === 'object')) continue;
+            
+            const items = Array.isArray(item) ? item : [item];
+            
+            for (const subItem of items) {
+                if (this.evaluateFilter(expr, subItem)) {
+                    results.push(subItem);
+                }
+            }
+        }
+        
+        return results;
+    }
+    
+    evaluateFilter(expr, data) {
+        // Handle comparison expressions
+        // @.property operator value
+        const match = expr.match(/@(?:\.(\w+)|\['([^']+)'\])\s*([=!<>]+|in|contains)\s*(.+)/);
+        
+        if (!match) {
+            // Simple existence check
+            const key = expr.replace(/^@\.?/, '');
+            return key in data;
+        }
+        
+        const prop1 = match[1] || match[2];
+        const operator = match[3];
+        let value = match[4].trim();
+        
+        // Remove quotes if present
+        if ((value.startsWith('"') && value.endsWith('"')) || 
+            (value.startsWith("'") && value.endsWith("'"))) {
+            value = value.slice(1, -1);
+        }
+        
+        const actualValue = data[prop1];
+        
+        switch (operator) {
+            case '==':
+                return String(actualValue) === value;
+            case '!=':
+                return String(actualValue) !== value;
+            case '<':
+                return Number(actualValue) < Number(value);
+            case '>':
+                return Number(actualValue) > Number(value);
+            case '<=':
+                return Number(actualValue) <= Number(value);
+            case '>=':
+                return Number(actualValue) >= Number(value);
+            case '=~':
+                return new RegExp(value).test(String(actualValue));
+            case 'in':
+                if (Array.isArray(actualValue)) {
+                    return actualValue.includes(value);
+                }
+                return false;
+            case 'contains':
+                return String(actualValue).includes(value);
+            default:
+                return false;
+        }
+    }
+    
+    displayResults(results) {
+        const output = document.getElementById('jsonpathOutput');
+        if (!output) return;
+        
+        const formatted = JSON.stringify(results, null, 2);
+        output.innerHTML = `<code>${this.syntaxHighlight(formatted)}</code>`;
+    }
+    
+    updateMatchCount(results) {
+        const countEl = document.getElementById('jsonpathMatchCount');
+        if (!countEl) return;
+        
+        const count = results.length;
+        countEl.textContent = `${count} match${count !== 1 ? 'es' : ''}`;
+        countEl.className = 'jsonpath-match-count ' + (count > 0 ? 'has-matches' : 'no-matches');
+    }
+    
+    syntaxHighlight(json) {
+        json = json.replace(/\u0026/g, '\u0026amp;')
+                   .replace(/\u003c/g, '\u0026lt;')
+                   .replace(/\u003e/g, '\u0026gt;');
+        
+        return json.replace(
+            /("(?:[^"\\\\]|\\\\.)*")|(\b(?:true|false|null)\b)|(-?\d+\.?\d*)|([{}\[\]])|([:,])/g,
+            (match, string, bool, number, brace, colon) => {
+                if (string) return `<span class="json-string">${match}</span>`;
+                if (bool) return `<span class="json-boolean">${match}</span>`;
+                if (number) return `<span class="json-number">${match}</span>`;
+                if (brace === '{' || brace === '}') return `<span class="json-brace">${match}</span>`;
+                if (brace === '[' || brace === ']') return `<span class="json-bracket">${match}</span>`;
+                if (colon === ':') return `<span class="json-colon">${match}</span>`;
+                if (colon === ',') return `<span class="json-comma">${match}</span>`;
+                return match;
+            }
+        );
+    }
+    
+    clear() {
+        const input = document.getElementById('jsonpathInput');
+        const output = document.getElementById('jsonpathOutput');
+        const countEl = document.getElementById('jsonpathMatchCount');
+        
+        if (input) input.value = '';
+        if (output) output.innerHTML = '<code>// Query results will appear here...</code>';
+        if (countEl) {
+            countEl.textContent = '';
+            countEl.className = 'jsonpath-match-count';
+        }
+    }
+    
+    copyResult() {
+        const output = document.getElementById('jsonpathOutput');
+        if (!output) return;
+        
+        const text = output.textContent;
+        if (!text || text.includes('// Query results')) {
+            this.showToast('❌ Nothing to copy!');
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            this.showToast('📋 JSONPath result copied!');
+        }).catch(() => {
+            this.showToast('❌ Failed to copy');
+        });
+    }
+    
+    showError(message) {
+        const output = document.getElementById('jsonpathOutput');
+        if (output) {
+            output.innerHTML = `<code style="color: #ff6b6b;">❌ ${message}</code>`;
+        }
+    }
+    
+    showToast(message) {
+        const existingToasts = document.querySelectorAll('.toast');
+        existingToasts.forEach(t => t.remove());
+        
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => toast.classList.add('show'), 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 2000);
+    }
+}
+
+// Initialize JSONPath engine
+window.jsonPathEngine = new JSONPathEngine();
+
 // Initialize usage dashboard and make it globally accessible
 window.usageDashboard = new UsageDashboard();
