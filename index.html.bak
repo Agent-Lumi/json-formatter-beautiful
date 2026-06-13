@@ -6,12 +6,20 @@
     <title>JSON Formatter &amp; Beautifier</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
 </head>
-<body>
+<body data-theme="dark">
     <div class="container">
         <header>
-            <h1>📋 JSON Formatter &amp; Beautifier</h1>
-            <p class="subtitle">Format, validate, and explore JSON with syntax highlighting</p>
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>📋 JSON Formatter &amp; Beautifier</h1>
+                    <p class="subtitle">Format, validate, and explore JSON with syntax highlighting</p>
+                </div>
+                <button id="themeToggle" class="btn btn-theme" title="Toggle dark/light theme">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
         </header>
 
         <div class="input-section">
@@ -41,6 +49,43 @@
                     <input type="checkbox" id="escapeUnicode" checked>
                     <span>Escape Unicode</span>
                 </label>
+                <label class="checkbox">
+                    <input type="checkbox" id="autoSave" checked>
+                    <span>Auto-save to localStorage</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" id="autoFormat">
+                    <span>Auto-format on paste</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- JSONPath Query Section -->
+        <div class="jsonpath-section" id="jsonpathSection" style="display: none;">
+            <div class="jsonpath-header">
+                <h3>🔍 JSONPath Query</h3>
+                <div class="jsonpath-controls">
+                    <button id="jsonpathHelpBtn" class="btn btn-secondary btn-small">❓ Help</button>
+                    <button id="clearJsonpathBtn" class="btn btn-secondary btn-small">🗑️ Clear</button>
+                </div>
+            </div>
+            <div class="jsonpath-input-row">
+                <input type="text" id="jsonpathInput" class="jsonpath-input" placeholder="$.store.book[?(@.price < 10)].title" spellcheck="false">
+                <button id="jsonpathExecuteBtn" class="btn btn-primary" title="Ctrl+Shift+P">▶️ Execute</button>
+            </div>
+            <div class="jsonpath-examples">
+                <span class="jsonpath-label">Examples:</span>
+                <button class="jsonpath-example" data-query="$">Get entire JSON</button>
+                <button class="jsonpath-example" data-query="$.store.book[*].title">Get all book titles</button>
+                <button class="jsonpath-example" data-query="$..price">Get all prices</button>
+                <button class="jsonpath-example" data-query="$.store.book[?(@.price < 10)]">Books under $10</button>
+            </div>
+            <div class="jsonpath-result" id="jsonpathResult">
+                <pre id="jsonpathOutput"><code>// Query results will appear here...</code></pre>
+            </div>
+            <div class="jsonpath-actions">
+                <button id="copyJsonpathBtn" class="btn btn-secondary btn-small">📋 Copy Result</button>
+                <span id="jsonpathMatchCount" class="jsonpath-match-count"></span>
             </div>
         </div>
 
@@ -69,6 +114,10 @@
                     <span id="linesStat">-</span>
                 </div>
                 <div class="stat-item">
+                    <span class="stat-label">Depth:</span>
+                    <span id="depthStat">-</span>
+                </div>
+                <div class="stat-item">
                     <span class="stat-label">Keys:</span>
                     <span id="keysStat">-</span>
                 </div>
@@ -76,93 +125,25 @@
                     <span class="stat-label">Arrays:</span>
                     <span id="arraysStat">-</span>
                 </div>
+                <div class="stat-item">
+                    <span class="stat-label">Objects:</span>
+                    <span id="objectsStat">-</span>
+                </div>
             </div>
         </div>
 
-        <div class="usage-dashboard" id="usageDashboard">
-            <div class="dashboard-header">
-                <h3>📈 Usage Statistics</h3>
-                <button id="toggleDashboard" class="btn btn-secondary btn-small">▼ Hide</button>
-            </div>
-            <div class="dashboard-content" id="dashboardContent">
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <div class="card-icon">🔄</div>
-                        <div class="card-value" id="totalFormats">0</div>
-                        <div class="card-label">Total Formats</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">✅</div>
-                        <div class="card-value" id="totalValidations">0</div>
-                        <div class="card-label">Validations</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">📦</div>
-                        <div class="card-value" id="totalMinifies">0</div>
-                        <div class="card-label">Minifications</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">📋</div>
-                        <div class="card-value" id="totalCopies">0</div>
-                        <div class="card-label">Copies</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">⏱️</div>
-                        <div class="card-value" id="sessionTime">00:00</div>
-                        <div class="card-label">Session Time</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">📅</div>
-                        <div class="card-value" id="firstVisit">-</div>
-                        <div class="card-label">First Visit</div>
-                    </div>
-                </div>
-                <div class="dashboard-history">
-                    <h4>🕐 Recent Activity</h4>
-                    <div id="activityLog" class="activity-list">
-                        <div class="activity-empty">No activity yet. Start formatting JSON!</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <footer>
+            <p>Built with 💜 by <a href="https://github.com/Agent-Lumi" target="_blank">Agent-Lumi</a></p>
+            <p class="version">v2.0.0 - Now with theme toggle &amp; localStorage persistence!</p>
+        </footer>
     </div>
 
-    <!-- Dark Mode Toggle -->
-    <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
 
-    <!-- Share Button -->
-    <button id="shareBtn" class="share-button">🔗 Share</button>
-
-    <!-- Offline Indicator -->
-    <div id="offlineIndicator" class="offline-indicator" style="display: none;">⚠️ Offline</div>
+    <!-- Hidden file input for import -->
+    <input type="file" id="fileInput" accept=".json,application/json" style="display: none;">
 
     <script src="app.js"></script>
-    
-    <!-- Keyboard Shortcuts Help -->
-    <div id="shortcutsHelp" class="shortcuts-help" style="display: none;">
-        <div class="shortcuts-content">
-            <h3>⌨️ Keyboard Shortcuts</h3>
-            <ul>
-                <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> - Format JSON</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> - Minify JSON</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> - Validate JSON</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> - Clear</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> - Expand All</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> - Collapse All</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> - Undo</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> - Redo</li>
-                <li><kbd>Tab</kbd> - Insert 4 spaces</li>
-                <li><kbd>Shift</kbd>+<kbd>Tab</kbd> - Remove indent</li>
-            </ul>
-            <button onclick="document.getElementById('shortcutsHelp').style.display='none'">Close</button>
-        </div>
-    </div>
-    
-    <button id="helpBtn" class="help-button" title="Keyboard Shortcuts">❓</button>
-    <script>
-        document.getElementById('helpBtn').addEventListener('click', () => {
-            document.getElementById('shortcutsHelp').style.display = 'flex';
-        });
-    </script>
 </body>
 </html>
