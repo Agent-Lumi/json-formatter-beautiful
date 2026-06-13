@@ -6,12 +6,20 @@
     <title>JSON Formatter &amp; Beautifier</title>
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
 </head>
-<body>
+<body data-theme="dark">
     <div class="container">
         <header>
-            <h1>📋 JSON Formatter &amp; Beautifier</h1>
-            <p class="subtitle">Format, validate, and explore JSON with syntax highlighting</p>
+            <div class="header-content">
+                <div class="header-text">
+                    <h1>📋 JSON Formatter &amp; Beautifier</h1>
+                    <p class="subtitle">Format, validate, and explore JSON with syntax highlighting</p>
+                </div>
+                <button id="themeToggle" class="btn btn-theme" title="Toggle dark/light theme">
+                    <span class="theme-icon">🌙</span>
+                </button>
+            </div>
         </header>
 
         <div class="input-section">
@@ -40,6 +48,14 @@
                 <label class="checkbox">
                     <input type="checkbox" id="escapeUnicode" checked>
                     <span>Escape Unicode</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" id="autoSave" checked>
+                    <span>Auto-save to localStorage</span>
+                </label>
+                <label class="checkbox">
+                    <input type="checkbox" id="autoFormat">
+                    <span>Auto-format on paste</span>
                 </label>
             </div>
         </div>
@@ -98,6 +114,10 @@
                     <span id="linesStat">-</span>
                 </div>
                 <div class="stat-item">
+                    <span class="stat-label">Depth:</span>
+                    <span id="depthStat">-</span>
+                </div>
+                <div class="stat-item">
                     <span class="stat-label">Keys:</span>
                     <span id="keysStat">-</span>
                 </div>
@@ -105,286 +125,25 @@
                     <span class="stat-label">Arrays:</span>
                     <span id="arraysStat">-</span>
                 </div>
+                <div class="stat-item">
+                    <span class="stat-label">Objects:</span>
+                    <span id="objectsStat">-</span>
+                </div>
             </div>
         </div>
 
-        <div class="usage-dashboard" id="usageDashboard">
-            <div class="dashboard-header">
-                <h3>📈 Usage Statistics</h3>
-                <button id="toggleDashboard" class="btn btn-secondary btn-small">▼ Hide</button>
-            </div>
-            <div class="dashboard-content" id="dashboardContent">
-                <div class="dashboard-grid">
-                    <div class="dashboard-card">
-                        <div class="card-icon">🔄</div>
-                        <div class="card-value" id="totalFormats">0</div>
-                        <div class="card-label">Total Formats</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">✅</div>
-                        <div class="card-value" id="totalValidations">0</div>
-                        <div class="card-label">Validations</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">📦</div>
-                        <div class="card-value" id="totalMinifies">0</div>
-                        <div class="card-label">Minifications</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">📋</div>
-                        <div class="card-value" id="totalCopies">0</div>
-                        <div class="card-label">Copies</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">⏱️</div>
-                        <div class="card-value" id="sessionTime">00:00</div>
-                        <div class="card-label">Session Time</div>
-                    </div>
-                    <div class="dashboard-card">
-                        <div class="card-icon">📅</div>
-                        <div class="card-value" id="firstVisit">-</div>
-                        <div class="card-label">First Visit</div>
-                    </div>
-                </div>
-                <div class="dashboard-history">
-                    <h4>🕐 Recent Activity</h4>
-                    <div id="activityLog" class="activity-list">
-                        <div class="activity-empty">No activity yet. Start formatting JSON!</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <footer>
+            <p>Built with 💜 by <a href="https://github.com/Agent-Lumi" target="_blank">Agent-Lumi</a></p>
+            <p class="version">v2.0.0 - Now with theme toggle &amp; localStorage persistence!</p>
+        </footer>
     </div>
 
-    <!-- Dark Mode Toggle -->
-    <button id="darkModeToggle" class="dark-mode-toggle">🌙</button>
+    <!-- Toast notifications -->
+    <div id="toastContainer" class="toast-container"></div>
 
-    <!-- Share Button -->
-    <button id="shareBtn" class="share-button">🔗 Share</button>
-
-    <!-- Offline Indicator -->
-    <div id="offlineIndicator" class="offline-indicator" style="display: none;">⚠️ Offline</div>
+    <!-- Hidden file input for import -->
+    <input type="file" id="fileInput" accept=".json,application/json" style="display: none;">
 
     <script src="app.js"></script>
-    
-    <!-- Keyboard Shortcuts Help -->
-    <div id="shortcutsHelp" class="shortcuts-help" style="display: none;">
-        <div class="shortcuts-content">
-            <h3>⌨️ Keyboard Shortcuts</h3>
-            <ul>
-                <li><kbd>Ctrl</kbd>+<kbd>Enter</kbd> - Format JSON</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd> - Minify JSON</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>V</kbd> - Validate JSON</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd> - Clear</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>E</kbd> - Expand All</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd> - Collapse All</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>P</kbd> - Execute JSONPath</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> - Undo</li>
-                <li><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> - Redo</li>
-                <li><kbd>Tab</kbd> - Insert 4 spaces</li>
-                <li><kbd>Shift</kbd>+<kbd>Tab</kbd> - Remove indent</li>
-            </ul>
-            <button onclick="document.getElementById('shortcutsHelp').style.display='none'">Close</button>
-        </div>
-    </div>
-
-    <!-- JSONPath Help Modal -->
-    <div id="jsonpathHelpModal" class="shortcuts-help" style="display: none;">
-        <div class="shortcuts-content" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
-            <h3>🔍 JSONPath Reference</h3>
-            <p style="color: #888; margin-bottom: 20px;">JSONPath is a query language for JSON, similar to XPath for XML.</p>
-            
-            <h4 style="color: #fff; margin: 20px 0 10px;">Basic Syntax</h4>
-            <table style="width: 100%; color: #ccc; font-size: 0.9rem; border-collapse: collapse;">
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>$</code></td>
-                    <td style="padding: 8px;">Root object/element</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>@</code></td>
-                    <td style="padding: 8px;">Current object/element</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>.property</code></td>
-                    <td style="padding: 8px;">Selects the property</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>['property']</code></td>
-                    <td style="padding: 8px;">Selects the property (bracket notation)</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>[n]</code></td>
-                    <td style="padding: 8px;">Array index</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>[0, n]</code></td>
-                    <td style="padding: 8px;">Union of indices</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>[start:end]</code></td>
-                    <td style="padding: 8px;">Array slice</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>[*]</code></td>
-                    <td style="padding: 8px;">All array elements</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>[?(expression)]</code></td>
-                    <td style="padding: 8px;">Filter expression</td>
-                </tr>
-                <tr style="border-bottom: 1px solid rgba(255,255,255,0.1);">
-                    <td style="padding: 8px;"><code>..property</code></td>
-                    <td style="padding: 8px;">Recursive descent</td>
-                </tr>
-            </table>
-
-            <h4 style="color: #fff; margin: 20px 0 10px;">Filter Operators</h4>
-            <ul style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">
-                <li><code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code> - Comparison</li>
-                <li><code>=~</code> - Regular expression match</li>
-                <li><code>in</code> - Check if value is in array</li>
-                <li><code>contains</code> - Check if string contains substring</li>
-                <li><code>size</code> - Array/string length</li>
-                <li><code>!expression</code> - Negation</li>
-            </ul>
-
-            <h4 style="color: #fff; margin: 20px 0 10px;">Examples</h4>
-            <ul style="color: #ccc; font-size: 0.9rem; margin-bottom: 20px;">
-                <li><code>$.store.book[*].author</code> - All book authors</li>
-                <li><code>$..author</code> - All authors anywhere</li>
-                <li><code>$.store.book[0]</code> - First book</li>
-                <li><code>$.store.book[-1:]</code> - Last book</li>
-                <li><code>$.store.book[?(@.price < 10)]</code> - Books under $10</li>
-                <li><code>$.store.book[?(@.category == 'fiction')]</code> - Fiction books</li>
-            </ul>
-
-            <button onclick="document.getElementById('jsonpathHelpModal').style.display='none'" style="width: 100%;">Close</button>
-        </div>
-    </div>
-    
-    <button id="helpBtn" class="help-button" title="Keyboard Shortcuts">❓</button>
-    <script>
-        document.getElementById('helpBtn').addEventListener('click', () => {
-            document.getElementById('shortcutsHelp').style.display = 'flex';
-        });
-    </script>
 </body>
 </html>
-<script>
-// Simple tutorial
-const tutorialSteps = [
-    { selector: 'h1', text: 'Welcome! This is the main title.' },
-    { selector: 'button', text: 'Click here to perform actions.' }
-];
-let currentStep = 0;
-function showTutorial() {
-    if (currentStep < tutorialSteps.length) {
-        const step = tutorialSteps[currentStep];
-        const el = document.querySelector(step.selector);
-        if (el) {
-            const tooltip = document.createElement('div');
-            tooltip.textContent = step.text;
-            tooltip.style.cssText = 'position:absolute;background:#6f42c1;color:white;padding:10px;border-radius:5px;z-index:1000;';
-            el.style.position = 'relative';
-            el.appendChild(tooltip);
-            setTimeout(() => tooltip.remove(), 3000);
-        }
-        currentStep++;
-    }
-}
-// Show tutorial on first visit
-if (!localStorage.getItem('tutorial-shown')) {
-    setTimeout(showTutorial, 1000);
-    localStorage.setItem('tutorial-shown', 'true');
-}
-</script>
-
-<script>
-// Enhanced Keyboard Shortcuts System
-(function() {
-    const keyboardShortcuts = {
-        'Ctrl+Enter': { action: () => document.getElementById('formatBtn')?.click(), desc: 'Format JSON' },
-        'Ctrl+Shift+M': { action: () => document.getElementById('minifyBtn')?.click(), desc: 'Minify JSON' },
-        'Ctrl+Shift+V': { action: () => document.getElementById('validateBtn')?.click(), desc: 'Validate JSON' },
-        'Ctrl+Shift+C': { action: () => document.getElementById('clearBtn')?.click(), desc: 'Clear' },
-        'Ctrl+Shift+E': { action: () => document.getElementById('expandAllBtn')?.click(), desc: 'Expand All' },
-        'Ctrl+Shift+L': { action: () => document.getElementById('collapseAllBtn')?.click(), desc: 'Collapse All' },
-        'Ctrl+Shift+P': { action: () => document.getElementById('jsonpathExecuteBtn')?.click(), desc: 'Execute JSONPath' },
-        'Ctrl+Shift+S': { action: () => document.getElementById('exportBtn')?.click(), desc: 'Export/Save' },
-        'Ctrl+D': { action: () => document.getElementById('copyBtn')?.click(), desc: 'Copy to Clipboard' },
-        'Ctrl+/': { action: () => document.getElementById('helpBtn')?.click(), desc: 'Show Help' },
-        'Escape': { action: () => {
-            const helpModal = document.getElementById('shortcutsHelp');
-            const jsonpathModal = document.getElementById('jsonpathHelpModal');
-            if (helpModal) helpModal.style.display = 'none';
-            if (jsonpathModal) jsonpathModal.style.display = 'none';
-        }, desc: 'Close Help' }
-    };
-    
-    // Build key from event
-    function getKeyCombo(e) {
-        const parts = [];
-        if (e.ctrlKey) parts.push('Ctrl');
-        if (e.altKey) parts.push('Alt');
-        if (e.shiftKey) parts.push('Shift');
-        if (e.key.length === 1) parts.push(e.key.toUpperCase());
-        else if (e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Shift') parts.push(e.key);
-        return parts.join('+');
-    }
-    
-    // Handle keyboard events
-    document.addEventListener('keydown', function(e) {
-        // Don't trigger shortcuts when typing in inputs (except textarea for specific shortcuts)
-        const tagName = e.target.tagName.toLowerCase();
-        const isTextInput = tagName === 'input' || tagName === 'textarea';
-        
-        // Tab handling for textarea
-        if (e.key === 'Tab' && e.target.id === 'jsonInput') {
-            e.preventDefault();
-            const start = e.target.selectionStart;
-            const end = e.target.selectionEnd;
-            const spaces = '    ';
-            e.target.value = e.target.value.substring(0, start) + spaces + e.target.value.substring(end);
-            e.target.selectionStart = e.target.selectionEnd = start + spaces.length;
-            return;
-        }
-        
-        // Check for keyboard shortcut
-        const keyCombo = getKeyCombo(e);
-        if (keyboardShortcuts[keyCombo]) {
-            // Don't trigger format/minify/validate while typing unless Ctrl+Enter
-            if (isTextInput && keyCombo !== 'Ctrl+Enter' && keyCombo !== 'Escape') {
-                return;
-            }
-            e.preventDefault();
-            keyboardShortcuts[keyCombo].action();
-            
-            // Visual feedback
-            showShortcutFeedback(keyboardShortcuts[keyCombo].desc);
-        }
-    });
-    
-    // Visual feedback for shortcut activation
-    function showShortcutFeedback(action) {
-        const feedback = document.createElement('div');
-        feedback.textContent = '⌨️ ' + action;
-        feedback.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#4CAF50;color:white;padding:8px 16px;border-radius:4px;font-size:14px;z-index:9999;animation:fadeInOut 1.5s ease';
-        document.body.appendChild(feedback);
-        setTimeout(() => feedback.remove(), 1400);
-    }
-    
-    // Add animation keyframes
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes fadeInOut {
-            0% { opacity: 0; transform: translateX(-50%) translateY(10px); }
-            20% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            80% { opacity: 1; transform: translateX(-50%) translateY(0); }
-            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-        }
-    `;
-    document.head.appendChild(style);
-    
-    console.log('✓ Keyboard shortcuts loaded');
-})();
-</script>

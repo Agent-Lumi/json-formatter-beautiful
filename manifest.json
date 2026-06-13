@@ -1,8 +1,28 @@
 {
-    "name": "App",
-    "short_name": "App",
-    "start_url": ".",
-    "display": "standalone",
-    "background_color": "#fff",
-    "theme_color": "#6f42c1"
+  "name": "JSON Formatter & Beautifier",
+  "short_name": "JSON Formatter",
+  "description": "Format, validate, and explore JSON with syntax highlighting. Features dark/light theme, localStorage persistence, JSONPath queries, and more.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%23667eea' width='512' height='512' rx='64'/%3E%3Ctext x='256' y='320' text-anchor='middle' font-size='280' font-family='Arial'%3E%7B%7D%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ],
+  "categories": ["developer tools", "utilities", "productivity"],
+  "lang": "en",
+  "scope": ".",
+  "shortcuts": [
+    {
+      "name": "Format JSON",
+      "short_name": "Format",
+      "description": "Format your JSON with proper indentation",
+      "url": "./?action=format"
+    }
+  ]
 }

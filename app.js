@@ -1383,3 +1383,233 @@ window.jsonPathEngine = new JSONPathEngine();
 
 // Initialize usage dashboard and make it globally accessible
 window.usageDashboard = new UsageDashboard();
+
+// ============================================
+// THEME MANAGER - Light/Dark Toggle
+// ============================================
+class ThemeManager {
+    constructor() {
+        this.themeToggle = document.getElementById('themeToggle');
+        this.body = document.body;
+        this.metaThemeColor = document.querySelector('meta[name="theme-color"]');
+        this.currentTheme = 'dark';
+        
+        this.init();
+    }
+    
+    init() {
+        // Load saved theme
+        const savedTheme = localStorage.getItem('jsonFormatterTheme');
+        if (savedTheme) {
+            this.setTheme(savedTheme, false);
+        }
+        
+        // Setup toggle
+        if (this.themeToggle) {
+            this.themeToggle.addEventListener('click', () => this.toggleTheme());
+        }
+    }
+    
+    toggleTheme() {
+        const newTheme = this.currentTheme === 'dark' ? 'light' : 'dark';
+        this.setTheme(newTheme, true);
+    }
+    
+    setTheme(theme, save = true) {
+        this.currentTheme = theme;
+        this.body.setAttribute('data-theme', theme);
+        
+        // Update meta theme-color for mobile browsers
+        if (this.metaThemeColor) {
+            this.metaThemeColor.content = theme === 'dark' ? '#1a1a2e' : '#f8f9fa';
+        }
+        
+        // Update toggle icon
+        const icon = this.themeToggle?.querySelector('.theme-icon');
+        if (icon) {
+            icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+        }
+        
+        // Save to localStorage
+        if (save) {
+            localStorage.setItem('jsonFormatterTheme', theme);
+        }
+    }
+}
+
+// ============================================
+// LOCALSTORAGE MANAGER - Persistence
+// ============================================
+class LocalStorageManager {
+    constructor() {
+        this.jsonInput = document.getElementById('jsonInput');
+        this.indentSize = document.getElementById('indentSize');
+        this.sortKeys = document.getElementById('sortKeys');
+        this.escapeUnicode = document.getElementById('escapeUnicode');
+        this.autoSave = document.getElementById('autoSave');
+        this.autoFormat = document.getElementById('autoFormat');
+        
+        this.autoSaveKey = 'jsonFormatter_autoSave';
+        this.dataKey = 'jsonFormatter_data';
+        this.optionsKey = 'jsonFormatter_options';
+        
+        this.init();
+    }
+    
+    init() {
+        this.loadSettings();
+        this.setupListeners();
+        this.setupAutoSave();
+        this.setupAutoFormat();
+    }
+    
+    loadSettings() {
+        // Load options
+        const savedOptions = localStorage.getItem(this.optionsKey);
+        if (savedOptions) {
+            const options = JSON.parse(savedOptions);
+            if (this.indentSize) this.indentSize.checked = options.indentSize !== false;
+            if (this.sortKeys) this.sortKeys.checked = options.sortKeys === true;
+            if (this.escapeUnicode) this.escapeUnicode.checked = options.escapeUnicode !== false;
+            if (this.autoSave) this.autoSave.checked = options.autoSave !== false;
+            if (this.autoFormat) this.autoFormat.checked = options.autoFormat === true;
+        }
+        
+        // Load data if auto-save is enabled
+        const autoSaveEnabled = this.autoSave ? this.autoSave.checked : true;
+        if (autoSaveEnabled) {
+            const savedData = localStorage.getItem(this.dataKey);
+            if (savedData && this.jsonInput && !this.jsonInput.value.trim()) {
+                this.jsonInput.value = savedData;
+                // Trigger format after a short delay
+                setTimeout(() => {
+                    if (window.jsonFormatter) {
+                        window.jsonFormatter.format();
+                    }
+                }, 100);
+            }
+        }
+    }
+    
+    setupListeners() {
+        // Save options when changed
+        [this.indentSize, this.sortKeys, this.escapeUnicode, this.autoSave, this.autoFormat].forEach(el => {
+            if (el) {
+                el.addEventListener('change', () => this.saveOptions());
+            }
+        });
+    }
+    
+    setupAutoSave() {
+        if (!this.jsonInput) return;
+        
+        let debounceTimer;
+        this.jsonInput.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                if (this.autoSave && this.autoSave.checked) {
+                    this.saveData();
+                }
+            }, 1000);
+        });
+    }
+    
+    setupAutoFormat() {
+        if (!this.jsonInput || !this.autoFormat) return;
+        
+        this.jsonInput.addEventListener('paste', (e) => {
+            if (this.autoFormat.checked) {
+                // Wait for paste to complete
+                setTimeout(() => {
+                    if (window.jsonFormatter) {
+                        try {
+                            JSON.parse(this.jsonInput.value);
+                            window.jsonFormatter.format();
+                        } catch (err) {
+                            // Invalid JSON, don't auto-format
+                        }
+                    }
+                }, 50);
+            }
+        });
+    }
+    
+    saveOptions() {
+        const options = {
+            indentSize: this.indentSize ? this.indentSize.checked : true,
+            sortKeys: this.sortKeys ? this.sortKeys.checked : false,
+            escapeUnicode: this.escapeUnicode ? this.escapeUnicode.checked : true,
+            autoSave: this.autoSave ? this.autoSave.checked : true,
+            autoFormat: this.autoFormat ? this.autoFormat.checked : false
+        };
+        localStorage.setItem(this.optionsKey, JSON.stringify(options));
+    }
+    
+    saveData() {
+        if (this.jsonInput) {
+            localStorage.setItem(this.dataKey, this.jsonInput.value);
+        }
+    }
+    
+    clearData() {
+        localStorage.removeItem(this.dataKey);
+    }
+}
+
+// ============================================
+// TOAST NOTIFICATION MANAGER
+// ============================================
+class ToastManager {
+    constructor() {
+        this.container = document.getElementById('toastContainer');
+        this.toasts = [];
+    }
+    
+    show(message, type = 'info', duration = 3000) {
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        
+        const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+        toast.innerHTML = `<span>${icon}</span><span>${message}</span>`;
+        
+        if (!this.container) {
+            // Create container if not exists
+            const newContainer = document.createElement('div');
+            newContainer.id = 'toastContainer';
+            newContainer.className = 'toast-container';
+            document.body.appendChild(newContainer);
+            this.container = newContainer;
+        }
+        
+        this.container.appendChild(toast);
+        
+        // Trigger animation
+        requestAnimationFrame(() => {
+            toast.classList.add('show');
+        });
+        
+        // Remove after duration
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, duration);
+    }
+}
+
+// Initialize managers after DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.themeManager = new ThemeManager();
+    window.localStorageManager = new LocalStorageManager();
+    window.toastManager = new ToastManager();
+});
+
+// Also initialize immediately if DOM is already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(() => {
+        window.themeManager = new ThemeManager();
+        window.localStorageManager = new LocalStorageManager();
+        window.toastManager = new ToastManager();
+    }, 1);
+}
