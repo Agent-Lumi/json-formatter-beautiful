@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="style.css">
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#1a1a2e">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%236366f1' width='192' height='192' rx='24'/%3E%3Ctext x='96' y='120' font-size='100' text-anchor='middle'%3E%F0%9F%93%8B%3C/text%3E%3C/svg%3E">
 </head>
 <body data-theme="dark">
     <div class="container">
@@ -16,7 +17,7 @@
                     <h1>📋 JSON Formatter &amp; Beautifier</h1>
                     <p class="subtitle">Format, validate, and explore JSON with syntax highlighting</p>
                 </div>
-                <button id="themeToggle" class="btn btn-theme" title="Toggle dark/light theme">
+                <button id="themeToggle" class="btn btn-theme" title="Toggle dark/light theme (Ctrl+D)">
                     <span class="theme-icon">🌙</span>
                 </button>
             </div>
@@ -28,7 +29,8 @@
                 <button id="minifyBtn" class="btn btn-secondary" title="Ctrl+Shift+M">📦 Minify</button>
                 <button id="validateBtn" class="btn btn-secondary" title="Ctrl+Shift+V">✅ Validate</button>
                 <button id="clearBtn" class="btn btn-danger" title="Ctrl+Shift+C">🗑️ Clear</button>
-                <button id="importBtn" class="btn btn-secondary">📁 Import</button>
+                <button id="importBtn" class="btn btn-secondary" title="Ctrl+O">📁 Import</button>
+                <button id="diffBtn" class="btn btn-secondary" title="Compare JSON (Ctrl+Shift+D)">🔀 Compare</button>
             </div>
             <textarea id="jsonInput" placeholder="Paste your JSON here..." spellcheck="false"></textarea>
             <div id="errorMsg" class="error-message"></div>
@@ -57,6 +59,34 @@
                     <input type="checkbox" id="autoFormat">
                     <span>Auto-format on paste</span>
                 </label>
+            </div>
+        </div>
+
+        <!-- JSON Comparison Modal -->
+        <div class="diff-modal" id="diffModal" style="display: none;">
+            <div class="diff-content">
+                <div class="diff-header">
+                    <h3>🔀 JSON Comparison</h3>
+                    <button class="btn btn-secondary" id="closeDiffBtn">✕ Close</button>
+                </div>
+                <div class="diff-inputs">
+                    <div class="diff-input-group">
+                        <label>Original JSON:</label>
+                        <textarea id="diffInput1" placeholder="Paste original JSON..." spellcheck="false"></textarea>
+                    </div>
+                    <div class="diff-input-group">
+                        <label>Modified JSON:</label>
+                        <textarea id="diffInput2" placeholder="Paste modified JSON..." spellcheck="false"></textarea>
+                    </div>
+                </div>
+                <div class="diff-actions">
+                    <button id="compareBtn" class="btn btn-primary">🔍 Compare</button>
+                    <button id="clearDiffBtn" class="btn btn-secondary">🗑️ Clear</button>
+                </div>
+                <div class="diff-result" id="diffResult" style="display: none;">
+                    <h4>Comparison Results:</h4>
+                    <pre id="diffOutput"></pre>
+                </div>
             </div>
         </div>
 
@@ -95,8 +125,8 @@
                 <div class="output-controls">
                     <button id="expandAllBtn" class="btn btn-secondary btn-small" title="Ctrl+Shift+E">📖 Expand All</button>
                     <button id="collapseAllBtn" class="btn btn-secondary btn-small" title="Ctrl+Shift+L">📕 Collapse All</button>
-                    <button id="copyBtn" class="btn btn-secondary">📋 Copy</button>
-                    <button id="exportBtn" class="btn btn-secondary">💾 Export</button>
+                    <button id="copyBtn" class="btn btn-secondary" title="Ctrl+C (when focused)">📋 Copy</button>
+                    <button id="downloadBtn" class="btn btn-secondary" title="Ctrl+S">💾 Download</button>
                 </div>
             </div>
             <pre id="jsonOutput"><code>// Formatted JSON will appear here...</code></pre>
@@ -134,7 +164,7 @@
 
         <footer>
             <p>Built with 💜 by <a href="https://github.com/Agent-Lumi" target="_blank">Agent-Lumi</a></p>
-            <p class="version">v2.0.0 - Now with theme toggle &amp; localStorage persistence!</p>
+            <p class="version">v2.1.0 - Now with JSON comparison, improved shortcuts & bug fixes!</p>
         </footer>
     </div>
 
@@ -144,54 +174,31 @@
     <!-- Hidden file input for import -->
     <input type="file" id="fileInput" accept=".json,application/json" style="display: none;">
 
+    <!-- Keyboard shortcuts help modal -->
+    <div class="shortcuts-modal" id="shortcutsModal" style="display: none;">
+        <div class="shortcuts-content">
+            <div class="shortcuts-header">
+                <h3>⌨️ Keyboard Shortcuts</h3>
+                <button class="btn btn-secondary" id="closeShortcutsBtn">✕ Close</button>
+            </div>
+            <div class="shortcuts-grid">
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Enter</kbd><span>Format JSON</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd><span>Minify JSON</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd><span>Validate JSON</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd><span>Clear input</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd><span>Open comparison</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>E</kbd><span>Expand all nodes</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd><span>Collapse all nodes</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Z</kbd><span>Undo</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Z</kbd><span>Redo</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>D</kbd><span>Toggle theme</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>O</kbd><span>Import file</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>S</kbd><span>Download output</span></div>
+                <div class="shortcut-item"><kbd>Ctrl</kbd> + <kbd>?</kbd><span>Show shortcuts</span></div>
+            </div>
+        </div>
+    </div>
+
     <script src="app.js"></script>
 </body>
 </html>
-<script>
-// Auto-save to localStorage
-const saveKey = 'app-data-' + location.pathname;
-const saveData = () => {
-    const data = { timestamp: Date.now(), inputs: {} };
-    document.querySelectorAll('input, textarea').forEach(el => {
-        data.inputs[el.id || el.name] = el.value;
-    });
-    localStorage.setItem(saveKey, JSON.stringify(data));
-};
-const loadData = () => {
-    const saved = localStorage.getItem(saveKey);
-    if (saved) {
-        const data = JSON.parse(saved);
-        Object.entries(data.inputs).forEach(([key, value]) => {
-            const el = document.getElementById(key) || document.querySelector('[name="' + key + '"]');
-            if (el) el.value = value;
-        });
-    }
-};
-document.addEventListener('input', saveData);
-document.addEventListener('DOMContentLoaded', loadData);
-</script>
-<script>
-// Share functionality
-const shareBtn = document.createElement('button');
-shareBtn.textContent = '🔗 Share';
-shareBtn.style.cssText = 'position:fixed;bottom:20px;right:20px;padding:10px 20px;background:#6f42c1;color:white;border:none;border-radius:20px;cursor:pointer;';
-shareBtn.onclick = () => {
-    if (navigator.share) {
-        navigator.share({ title: document.title, url: location.href });
-    } else {
-        navigator.clipboard.writeText(location.href);
-        shareBtn.textContent = '✅ Copied!';
-        setTimeout(() => shareBtn.textContent = '🔗 Share', 2000);
-    }
-};
-document.body.appendChild(shareBtn);
-</script>
-<script>
-// Offline indicator
-const offlineIndicator = document.createElement('div');
-offlineIndicator.textContent = '⚠️ Offline';
-offlineIndicator.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#ff6b6b;color:white;text-align:center;padding:5px;display:none;';
-document.body.appendChild(offlineIndicator);
-window.addEventListener('online', () => offlineIndicator.style.display = 'none');
-window.addEventListener('offline', () => offlineIndicator.style.display = 'block');
-</script>
