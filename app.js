@@ -1598,11 +1598,269 @@ class ToastManager {
     }
 }
 
+// ============================================
+// JSONPath Query Engine (Simple Implementation)
+// ============================================
+class JSONPathEngine {
+    static query(data, path) {
+        if (!path || path === '
+
+// Also initialize immediately if DOM is already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(() => {
+        window.themeManager = new ThemeManager();
+        window.localStorageManager = new LocalStorageManager();
+        window.toastManager = new ToastManager();
+        window.jsonPathController = new JSONPathController();
+    }, 1);
+}
+) return data;
+        
+        try {
+            // Remove $ prefix if present
+            path = path.startsWith('
+
+// Also initialize immediately if DOM is already loaded
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(() => {
+        window.themeManager = new ThemeManager();
+        window.localStorageManager = new LocalStorageManager();
+        window.toastManager = new ToastManager();
+    }, 1);
+}
+) ? path.slice(1) : path;
+            
+            // Split by dots and brackets
+            const tokens = path.match(/\[?[^\.\[\]]+\]?/g) || [];
+            let result = data;
+            
+            for (const token of tokens) {
+                if (result === null || result === undefined) return undefined;
+                
+                if (token.startsWith('[') && token.endsWith(']')) {
+                    // Array access
+                    const index = token.slice(1, -1);
+                    if (index === '*') {
+                        // Wildcard - return all items
+                        return result;
+                    } else if (index.startsWith('?(')) {
+                        // Filter expression (simplified)
+                        const filterMatch = index.match(/@\.(\w+)\s*(==|!=|<|>|<=|>=)\s*(.+)/);
+                        if (filterMatch && Array.isArray(result)) {
+                            const [, key, op, value] = filterMatch;
+                            const cleanValue = value.replace(/^['"]|['"]$/g, '');
+                            const numValue = parseFloat(cleanValue);
+                            return result.filter(item => {
+                                const itemVal = item[key];
+                                if (op === '==') return itemVal == cleanValue || itemVal == numValue;
+                                if (op === '!=') return itemVal != cleanValue && itemVal != numValue;
+                                if (op === '<') return itemVal < numValue;
+                                if (op === '>') return itemVal > numValue;
+                                if (op === '<=') return itemVal <= numValue;
+                                if (op === '>=') return itemVal >= numValue;
+                                return false;
+                            });
+                        }
+                        return [];
+                    } else {
+                        // Numeric index
+                        const idx = parseInt(index, 10);
+                        result = Array.isArray(result) ? result[idx] : undefined;
+                    }
+                } else {
+                    // Property access
+                    result = result[token];
+                }
+            }
+            
+            return result;
+        } catch (e) {
+            return { error: e.message };
+        }
+    }
+    
+    static getAllValues(data, key) {
+        const results = [];
+        const traverse = (obj) => {
+            if (obj === null || typeof obj !== 'object') return;
+            if (Array.isArray(obj)) {
+                obj.forEach(item => traverse(item));
+            } else {
+                if (key in obj) results.push(obj[key]);
+                Object.values(obj).forEach(val => traverse(val));
+            }
+        };
+        traverse(data);
+        return results;
+    }
+}
+
+// ============================================
+// JSONPath UI Controller
+// ============================================
+class JSONPathController {
+    constructor() {
+        this.section = document.getElementById('jsonpathSection');
+        this.input = document.getElementById('jsonpathInput');
+        this.output = document.getElementById('jsonpathOutput');
+        this.executeBtn = document.getElementById('jsonpathExecuteBtn');
+        this.clearBtn = document.getElementById('clearJsonpathBtn');
+        this.helpBtn = document.getElementById('jsonpathHelpBtn');
+        this.copyBtn = document.getElementById('copyJsonpathBtn');
+        this.matchCount = document.getElementById('jsonpathMatchCount');
+        
+        this.init();
+    }
+    
+    init() {
+        this.setupEventListeners();
+        this.setupExamples();
+    }
+    
+    setupEventListeners() {
+        if (this.executeBtn) {
+            this.executeBtn.addEventListener('click', () => this.execute());
+        }
+        
+        if (this.clearBtn) {
+            this.clearBtn.addEventListener('click', () => this.clear());
+        }
+        
+        if (this.copyBtn) {
+            this.copyBtn.addEventListener('click', () => this.copyResult());
+        }
+        
+        if (this.helpBtn) {
+            this.helpBtn.addEventListener('click', () => this.showHelp());
+        }
+        
+        if (this.input) {
+            this.input.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'p') {
+                    e.preventDefault();
+                    this.execute();
+                }
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.execute();
+                }
+            });
+        }
+    }
+    
+    setupExamples() {
+        const examples = document.querySelectorAll('.jsonpath-example');
+        examples.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const query = btn.dataset.query;
+                if (this.input && query) {
+                    this.input.value = query;
+                    this.execute();
+                }
+            });
+        });
+    }
+    
+    execute() {
+        if (!this.input || !this.output) return;
+        
+        const query = this.input.value.trim();
+        if (!query) {
+            this.output.textContent = '// Enter a JSONPath query...';
+            this.updateMatchCount(0, false);
+            return;
+        }
+        
+        // Get current JSON data from formatter
+        const currentData = window.jsonFormatter ? window.jsonFormatter.currentData : null;
+        if (!currentData) {
+            this.output.textContent = '// Please format valid JSON first...';
+            this.updateMatchCount(0, false);
+            return;
+        }
+        
+        try {
+            let result;
+            if (query.startsWith('$..')) {
+                // Recursive descent for keys
+                const key = query.slice(3);
+                result = JSONPathEngine.getAllValues(currentData, key);
+            } else {
+                result = JSONPathEngine.query(currentData, query);
+            }
+            
+            if (result && result.error) {
+                this.output.textContent = `// Error: ${result.error}`;
+                this.updateMatchCount(0, false);
+            } else {
+                const formatted = JSON.stringify(result, null, 2);
+                this.output.textContent = formatted;
+                const count = Array.isArray(result) ? result.length : 1;
+                this.updateMatchCount(count, true);
+            }
+        } catch (e) {
+            this.output.textContent = `// Error: ${e.message}`;
+            this.updateMatchCount(0, false);
+        }
+    }
+    
+    clear() {
+        if (this.input) this.input.value = '';
+        if (this.output) this.output.textContent = '// Query results will appear here...';
+        this.updateMatchCount(0, false);
+    }
+    
+    copyResult() {
+        if (!this.output) return;
+        const text = this.output.textContent;
+        if (!text || text.startsWith('//')) {
+            if (window.toastManager) {
+                window.toastManager.show('Nothing to copy!', 'error');
+            }
+            return;
+        }
+        
+        navigator.clipboard.writeText(text).then(() => {
+            if (window.toastManager) {
+                window.toastManager.show('📋 Copied to clipboard!', 'success');
+            }
+        });
+    }
+    
+    updateMatchCount(count, hasResults) {
+        if (!this.matchCount) return;
+        this.matchCount.textContent = hasResults ? `${count} match${count !== 1 ? 'es' : ''}` : '';
+        this.matchCount.className = 'jsonpath-match-count ' + (hasResults ? 'has-matches' : 'no-matches');
+    }
+    
+    showHelp() {
+        const helpText = `
+JSONPath Query Help:
+
+$           - Root object
+.key        - Dot notation for property
+[key]       - Bracket notation
+[index]     - Array index (0-based)
+[*]         - All array elements
+[?(@.x)]    - Filter expression
+$..key      - Recursive descent
+
+Examples:
+$.store.book[0]          - First book
+$.store.book[*].title    - All book titles
+$..price                 - All prices recursively
+$.store.book[?(@.price<10)] - Books under $10`;
+        
+        alert(helpText);
+    }
+}
+
 // Initialize managers after DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     window.themeManager = new ThemeManager();
     window.localStorageManager = new LocalStorageManager();
     window.toastManager = new ToastManager();
+    window.jsonPathController = new JSONPathController();
 });
 
 // Also initialize immediately if DOM is already loaded
