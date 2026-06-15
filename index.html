@@ -202,3 +202,41 @@
     <script src="app.js"></script>
 </body>
 </html>
+<script>
+// Browser notifications
+(function() {
+    if ('Notification' in window) {
+        Notification.requestPermission();
+        
+        window.showNotification = function(title, body, icon = '🔔') {
+            if (Notification.permission === 'granted') {
+                new Notification(title, {
+                    body: body,
+                    icon: icon,
+                    badge: icon
+                });
+            }
+        };
+    }
+    
+    // Toast notification fallback
+    window.showToast = function(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 25px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10000;
+            animation: slideIn 0.3s ease-out;
+            background: ${type === 'success' ? '#00b894' : type === 'error' ? '#e74c3c' : '#6c5ce7'};
+        `;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    };
+})();
+</script>
